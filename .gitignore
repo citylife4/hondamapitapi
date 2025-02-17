@@ -1,0 +1,5 @@
+venv/
+wallet/
+__pycache__/
+tokens.json
+settings.py
