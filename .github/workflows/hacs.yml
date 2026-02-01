@@ -1,0 +1,29 @@
+name: HACS Validation
+
+on:
+  push:
+    branches: [ main, copilot/** ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate for HACS
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: HACS validation
+      uses: hacs/action@main
+      with:
+        category: integration
+        ignore: brands
+
+    - name: Hassfest validation
+      uses: home-assistant/actions/hassfest@master

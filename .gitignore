@@ -29,3 +29,6 @@ env/
 # Export files (generated)
 *.geojson
 *.kml
+
+# Home Assistant cache
+.mapit_tokens.json

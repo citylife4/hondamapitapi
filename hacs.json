@@ -1,0 +1,7 @@
+{
+  "name": "Mapit Motorcycle Tracker",
+  "content_in_root": false,
+  "filename": "mapit_tracker",
+  "render_readme": true,
+  "homeassistant": "2023.1.0"
+}
