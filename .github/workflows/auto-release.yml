@@ -59,7 +59,8 @@ jobs:
         git add custom_components/mapit_tracker/manifest.json
         git commit -m "Bump version to $VERSION"
         git tag "v$VERSION"
-        git push origin main "v$VERSION"
+        git push origin main
+        git push origin "v$VERSION"
 
     - name: Create release archive
       run: |
