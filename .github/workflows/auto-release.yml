@@ -12,6 +12,8 @@ jobs:
   auto-release:
     name: Create Automatic Release
     runs-on: ubuntu-latest
+    # Skip if commit message contains version bump to prevent infinite loop
+    if: "!contains(github.event.head_commit.message, 'Bump version to')"
     
     steps:
     - name: Checkout code
@@ -49,25 +51,20 @@ jobs:
         mv tmp.json custom_components/mapit_tracker/manifest.json
         cat custom_components/mapit_tracker/manifest.json
 
-    - name: Commit version bump
+    - name: Commit version bump and create tag
       run: |
         VERSION="${{ steps.next_version.outputs.next_version }}"
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git add custom_components/mapit_tracker/manifest.json
         git commit -m "Bump version to $VERSION"
-        git push
+        git tag "v$VERSION"
+        git push origin main "v$VERSION"
 
     - name: Create release archive
       run: |
         cd custom_components
         zip -r ../mapit_tracker.zip mapit_tracker/
-
-    - name: Create Git Tag
-      run: |
-        VERSION="${{ steps.next_version.outputs.next_version }}"
-        git tag "v$VERSION"
-        git push origin "v$VERSION"
 
     - name: Generate release notes
       id: release_notes
