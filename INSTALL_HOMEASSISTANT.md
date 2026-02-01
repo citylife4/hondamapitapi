@@ -9,7 +9,41 @@ Complete guide for installing and configuring the Mapit Motorcycle Tracker integ
 - Your Mapit.me login credentials
 - AWS Cognito configuration details (see below)
 
-## Method 1: Manual Installation
+## Installation Methods
+
+### Method 1: HACS Installation (Recommended)
+
+HACS (Home Assistant Community Store) makes installation and updates easier.
+
+1. **Install HACS** (if not already installed):
+   - Follow the [HACS installation guide](https://hacs.xyz/docs/setup/download)
+
+2. **Add Custom Repository**:
+   - Open HACS in Home Assistant
+   - Click on **Integrations**
+   - Click the **⋮** (three dots) in the top right corner
+   - Select **Custom repositories**
+   - Add repository URL: `https://github.com/citylife4/hondamapitapi`
+   - Category: **Integration**
+   - Click **Add**
+
+3. **Install the Integration**:
+   - In HACS → Integrations, search for "Mapit Motorcycle Tracker"
+   - Click on it
+   - Click **Download**
+   - Choose the latest version
+   - Click **Download**
+
+4. **Restart Home Assistant**:
+   - Go to **Settings** → **System** → **Restart**
+
+5. **Add the Integration**:
+   - Go to **Settings** → **Devices & Services**
+   - Click **+ Add Integration**
+   - Search for "Mapit Motorcycle Tracker"
+   - Follow the configuration wizard
+
+### Method 2: Manual Installation
 
 ### Step 1: Copy Integration Files
 
@@ -47,18 +81,6 @@ Restart Home Assistant to load the new integration:
 2. Click the **+ Add Integration** button
 3. Search for "Mapit Motorcycle Tracker"
 4. Click on it to start the configuration
-
-## Method 2: HACS Installation (Future)
-
-Once this integration is added to HACS:
-
-1. Open HACS in Home Assistant
-2. Go to **Integrations**
-3. Click the **+** button
-4. Search for "Mapit Motorcycle Tracker"
-5. Click **Install**
-6. Restart Home Assistant
-7. Add the integration via Settings → Devices & Services
 
 ## Configuration
 

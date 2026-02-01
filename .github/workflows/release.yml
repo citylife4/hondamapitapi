@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  release:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Get release version
+      id: version
+      run: |
+        echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Update manifest version
+      run: |
+        VERSION=${{ steps.version.outputs.version }}
+        sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" custom_components/mapit_tracker/manifest.json
+
+    - name: Create release archive
+      run: |
+        cd custom_components
+        zip -r ../mapit_tracker.zip mapit_tracker/
+
+    - name: Upload release archive
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./mapit_tracker.zip
+        asset_name: mapit_tracker.zip
+        asset_content_type: application/zip
+
+    - name: Update release notes
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const release = await github.rest.repos.getRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: context.payload.release.id
+          });
+          
+          const body = release.data.body + '\n\n## Installation\n\n' +
+            '### HACS (Recommended)\n' +
+            '1. Add this repository as a custom repository in HACS\n' +
+            '2. Search for "Mapit Motorcycle Tracker"\n' +
+            '3. Click Install\n\n' +
+            '### Manual\n' +
+            '1. Download `mapit_tracker.zip`\n' +
+            '2. Extract to `custom_components/mapit_tracker`\n' +
+            '3. Restart Home Assistant';
+          
+          await github.rest.repos.updateRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: context.payload.release.id,
+            body: body
+          });

@@ -25,6 +25,20 @@ A comprehensive motorcycle tracking solution that interfaces with the Mapit.me v
 
 ### For Home Assistant Users
 
+#### HACS Installation (Recommended)
+
+1. Add this repository as a custom repository in HACS:
+   - Go to HACS → Integrations → ⋮ (menu) → Custom repositories
+   - Add URL: `https://github.com/citylife4/hondamapitapi`
+   - Category: Integration
+2. Search for "Mapit Motorcycle Tracker" in HACS
+3. Click Install
+4. Restart Home Assistant
+5. Go to Settings → Devices & Services → Add Integration
+6. Search for "Mapit Motorcycle Tracker" and follow the setup wizard
+
+#### Manual Installation
+
 1. Copy `custom_components/mapit_tracker` to your Home Assistant `config/custom_components/` directory
 2. Restart Home Assistant
 3. Go to Settings → Devices & Services → Add Integration
@@ -68,6 +82,7 @@ See [Home Assistant Integration README](custom_components/mapit_tracker/README.m
 
 - [AGENTS.md](AGENTS.md) - Detailed architecture and API documentation
 - [Home Assistant Integration](custom_components/mapit_tracker/README.md) - HA setup guide
+- [HACS Deployment](HACS_DEPLOYMENT.md) - Guide for HACS submission and releases
 - [mapit-tracker.service](mapit-tracker.service) - Systemd service configuration
 
 ## Requirements
