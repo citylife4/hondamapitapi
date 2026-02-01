@@ -78,8 +78,18 @@ class MapitDeviceTracker(CoordinatorEntity, TrackerEntity):
         if not self.coordinator.data:
             return {}
 
-        return {
+        attrs = {
             "speed": self.coordinator.data.get("speed"),
             "status": self.coordinator.data.get("status"),
             "gps_accuracy": self.coordinator.data.get("gps_accuracy"),
         }
+        
+        # Add optional fields if available
+        if self.coordinator.data.get("hdop") is not None:
+            attrs["hdop"] = self.coordinator.data.get("hdop")
+        if self.coordinator.data.get("odometer") is not None:
+            attrs["odometer"] = self.coordinator.data.get("odometer")
+        if self.coordinator.data.get("last_coord_ts") is not None:
+            attrs["last_coord_ts"] = self.coordinator.data.get("last_coord_ts")
+        
+        return attrs

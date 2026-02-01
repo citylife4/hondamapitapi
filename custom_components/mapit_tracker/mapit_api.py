@@ -258,6 +258,9 @@ class MapitAPI:
             "status": status,
             "gps_accuracy": state.get("gpsAccuracy", 0),
             "battery": state.get("battery", 0),
+            "hdop": state.get("hdop"),
+            "odometer": state.get("odometer"),
+            "last_coord_ts": state.get("lastCoordTs"),
             "raw_data": response,
         }
 
