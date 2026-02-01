@@ -1,0 +1,19 @@
+[Unit]
+Description=Mapit Vehicle Tracking Service
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/dev/mapit
+Environment="PATH=/home/ubuntu/dev/mapit/venv/bin:/usr/bin"
+ExecStart=/home/ubuntu/dev/mapit/venv/bin/python mapit.py --checker --sleep-time 5
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=append:/var/log/mapit/tracker.log
+StandardError=append:/var/log/mapit/tracker-error.log
+
+[Install]
+WantedBy=multi-user.target

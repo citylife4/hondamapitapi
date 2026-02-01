@@ -1,5 +1,31 @@
-venv/
-wallet/
-__pycache__/
-tokens.json
+# Mapit Vehicle Tracker - Git Ignore
+
+# Credentials and secrets (NEVER commit these)
 settings.py
+tokens.json
+
+# Oracle wallet (contains passwords)
+wallet/
+wallet/**
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE settings
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+
+# Export files (generated)
+*.geojson
+*.kml
