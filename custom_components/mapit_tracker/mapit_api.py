@@ -241,14 +241,23 @@ class MapitAPI:
         # Extract vehicle data
         vehicle = response["vehicles"][0]
         state = vehicle["device"]["state"]
+        
+        # Get speed and status
+        speed = state["speed"]
+        status = state["status"]
+        
+        # Normalize speed: set to 0 when vehicle is at rest
+        # API sometimes reports residual speed values when stopped
+        if status == "AT_REST":
+            speed = 0
 
         return {
             "latitude": state["lat"],
             "longitude": state["lng"],
-            "speed": state["speed"],
-            "status": state["status"],
+            "speed": speed,
+            "status": status,
             "gps_accuracy": state.get("gpsAccuracy", 0),
-            "battery": vehicle.get("battery", {}).get("level", 0),
+            "battery": state.get("battery", 0),
             "raw_data": response,
         }
 
