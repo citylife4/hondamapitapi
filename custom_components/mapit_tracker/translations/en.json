@@ -1,0 +1,25 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Mapit Motorcycle Tracker",
+        "description": "Configure your Mapit account to track your motorcycle",
+        "data": {
+          "username": "Email address",
+          "password": "Password",
+          "identity_pool_id": "AWS Identity Pool ID",
+          "user_pool_id": "AWS User Pool ID",
+          "user_pool_client_id": "AWS User Pool Client ID"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to Mapit API",
+      "invalid_auth": "Invalid authentication credentials",
+      "unknown": "Unexpected error occurred"
+    },
+    "abort": {
+      "already_configured": "This account is already configured"
+    }
+  }
+}

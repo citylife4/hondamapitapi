@@ -1,0 +1,261 @@
+"""Mapit API wrapper for Home Assistant integration."""
+from __future__ import annotations
+
+import datetime
+import hashlib
+import hmac
+import json
+import logging
+import os
+from pathlib import Path
+
+import requests
+
+_LOGGER = logging.getLogger(__name__)
+
+
+class MapitAPI:
+    """API wrapper for Mapit vehicle tracking service."""
+
+    def __init__(
+        self,
+        username: str,
+        password: str,
+        identity_pool_id: str,
+        user_pool_id: str,
+        user_pool_client_id: str,
+        hass=None,
+    ):
+        """Initialize the API."""
+        self.username = username
+        self.password = password
+        self.identity_pool_id = identity_pool_id
+        self.user_pool_id = user_pool_id
+        self.user_pool_client_id = user_pool_client_id
+        self.hass = hass
+        
+        # API configuration
+        self.auth_flow_type = "USER_PASSWORD_AUTH"
+        self.service = "execute-api"
+        self.host = "core.prod.mapit.me"
+        self.region = "eu-west-1"
+        self.url_idp = f"cognito-idp.{self.region}.amazonaws.com"
+        self.url_identity = f"cognito-identity.{self.region}.amazonaws.com"
+        
+        # Tokens (will be populated during authentication)
+        self.id_token = None
+        self.access_token = None
+        self.access_key = None
+        self.secret_key = None
+        self.session_token = None
+        self.identity_id = None
+        self.account_id = None
+        
+        # Token cache file path
+        if hass:
+            self.token_cache_file = Path(hass.config.config_dir) / ".mapit_tokens.json"
+        else:
+            self.token_cache_file = Path("tokens.json")
+        
+        # Try to load cached tokens
+        self._load_cached_tokens()
+
+    def _load_cached_tokens(self):
+        """Load tokens from cache file."""
+        try:
+            if self.token_cache_file.exists():
+                with open(self.token_cache_file, "r") as f:
+                    tokens = json.load(f)
+                self.access_key = tokens.get("access_key")
+                self.secret_key = tokens.get("secret_key")
+                self.session_token = tokens.get("session_token")
+                self.identity_id = tokens.get("identity_id")
+                self.id_token = tokens.get("id_token")
+                self.access_token = tokens.get("access_token")
+                self.account_id = tokens.get("id")
+                _LOGGER.debug("Loaded cached tokens")
+        except Exception as e:
+            _LOGGER.debug("Could not load cached tokens: %s", e)
+
+    def _save_tokens_to_cache(self):
+        """Save tokens to cache file."""
+        try:
+            tokens = {
+                "access_key": self.access_key,
+                "secret_key": self.secret_key,
+                "session_token": self.session_token,
+                "identity_id": self.identity_id,
+                "id_token": self.id_token,
+                "access_token": self.access_token,
+                "id": self.account_id,
+            }
+            with open(self.token_cache_file, "w") as f:
+                json.dump(tokens, f)
+            _LOGGER.debug("Saved tokens to cache")
+        except Exception as e:
+            _LOGGER.error("Could not save tokens to cache: %s", e)
+
+    def _send_request(self, url, headers, payload=None, method="POST", url_prefix="https://"):
+        """Send HTTP request to API."""
+        headers["content-type"] = "application/x-amz-json-1.1"
+        response = requests.request(method, url_prefix + url, headers=headers, json=payload, timeout=30)
+        
+        if response.status_code == 403:
+            _LOGGER.warning("Token expired, need to re-authenticate")
+            raise TokenExpiredError("Token expired")
+        
+        if response.status_code != 200:
+            _LOGGER.error("Request failed: %s - %s", response.status_code, response.text)
+            raise RequestFailedError(f"Request failed with status {response.status_code}")
+        
+        return response.json()
+
+    def authenticate(self):
+        """Authenticate with Mapit API and get all required tokens."""
+        _LOGGER.debug("Starting authentication")
+        
+        # Step 1: Get ID and Access tokens
+        payload = {
+            "AuthFlow": self.auth_flow_type,
+            "ClientId": self.user_pool_client_id,
+            "AuthParameters": {"USERNAME": self.username, "PASSWORD": self.password},
+            "ClientMetadata": {},
+        }
+        headers = {"x-amz-target": "AWSCognitoIdentityProviderService.InitiateAuth"}
+        
+        response = self._send_request(self.url_idp, headers, payload=payload)
+        self.id_token = response["AuthenticationResult"]["IdToken"]
+        self.access_token = response["AuthenticationResult"]["AccessToken"]
+        
+        # Step 2: Get Identity ID
+        payload = {
+            "IdentityPoolId": self.identity_pool_id,
+            "Logins": {f"{self.url_idp}/{self.user_pool_id}": self.id_token},
+        }
+        headers = {"x-amz-target": "AWSCognitoIdentityService.GetId"}
+        
+        response = self._send_request(self.url_identity, headers, payload=payload)
+        self.identity_id = response["IdentityId"]
+        
+        # Step 3: Get AWS Credentials
+        payload = {
+            "IdentityId": self.identity_id,
+            "Logins": {f"{self.url_idp}/{self.user_pool_id}": self.id_token},
+        }
+        headers = {"x-amz-target": "AWSCognitoIdentityService.GetCredentialsForIdentity"}
+        
+        response = self._send_request(self.url_identity, headers, payload=payload)
+        self.access_key = response["Credentials"]["AccessKeyId"]
+        self.secret_key = response["Credentials"]["SecretKey"]
+        self.session_token = response["Credentials"]["SessionToken"]
+        
+        # Step 4: Get Account ID
+        spacename = "/v1/accounts"
+        canonical_querystring = f"email={self.username.replace('@', '%40')}"
+        
+        response = self._authorized_request(spacename, canonical_querystring)
+        self.account_id = response[0]["id"]
+        
+        # Save tokens to cache
+        self._save_tokens_to_cache()
+        
+        _LOGGER.info("Authentication successful")
+
+    def _sign(self, key, msg):
+        """Sign a message with HMAC-SHA256."""
+        return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
+
+    def _get_signature_key(self, key, date_stamp):
+        """Generate AWS signature key."""
+        k_date = self._sign(("AWS4" + key).encode("utf-8"), date_stamp)
+        k_region = self._sign(k_date, self.region)
+        k_service = self._sign(k_region, self.service)
+        k_signing = self._sign(k_service, "aws4_request")
+        return k_signing
+
+    def _create_auth_header(self, method, spacename, canonical_querystring=""):
+        """Create AWS Signature Version 4 authorization header."""
+        t = datetime.datetime.utcnow()
+        amz_date = t.strftime("%Y%m%dT%H%M%SZ")
+        datestamp = t.strftime("%Y%m%d")
+        
+        canonical_headers = (
+            f"accept:application/json\nhost:{self.host}\nx-amz-date:{amz_date}\n"
+        )
+        signed_headers = "accept;host;x-amz-date"
+        algorithm = "AWS4-HMAC-SHA256"
+        credential_scope = f"{datestamp}/{self.region}/{self.service}/aws4_request"
+        payload_hash = hashlib.sha256(b"").hexdigest()
+        
+        canonical_request = (
+            f"{method}\n{spacename}\n{canonical_querystring}\n"
+            f"{canonical_headers}\n{signed_headers}\n{payload_hash}"
+        )
+        
+        string_to_sign = (
+            f"{algorithm}\n{amz_date}\n{credential_scope}\n"
+            f"{hashlib.sha256(canonical_request.encode('utf-8')).hexdigest()}"
+        )
+        
+        signing_key = self._get_signature_key(self.secret_key, datestamp)
+        signature = hmac.new(signing_key, string_to_sign.encode("utf-8"), hashlib.sha256).hexdigest()
+        
+        auth_value = (
+            f"{algorithm} Credential={self.access_key}/{datestamp}/{self.region}/"
+            f"{self.service}/aws4_request, SignedHeaders={signed_headers} Signature={signature}"
+        )
+        
+        return auth_value, amz_date
+
+    def _authorized_request(self, spacename, canonical_querystring="", method="GET"):
+        """Make an authorized request to the Mapit API."""
+        auth_value, amz_date = self._create_auth_header(method, spacename, canonical_querystring)
+        
+        url = f"{self.host}{spacename}?{canonical_querystring}"
+        headers = {
+            "host": self.host,
+            "Accept": "application/json",
+            "X-Amz-Security-Token": self.session_token,
+            "X-Id-Token": self.id_token,
+            "x-amz-date": amz_date,
+            "Authorization": auth_value,
+        }
+        
+        return self._send_request(url, headers, method=method)
+
+    def get_current_status(self):
+        """Get current vehicle status."""
+        if not self.account_id:
+            _LOGGER.debug("No account ID, authenticating first")
+            self.authenticate()
+        
+        spacename = f"/v1/accounts/{self.account_id}/summary"
+        
+        try:
+            response = self._authorized_request(spacename)
+        except TokenExpiredError:
+            _LOGGER.info("Token expired, re-authenticating")
+            self.authenticate()
+            response = self._authorized_request(spacename)
+        
+        # Extract vehicle data
+        vehicle = response["vehicles"][0]
+        state = vehicle["device"]["state"]
+        
+        return {
+            "latitude": state["lat"],
+            "longitude": state["lng"],
+            "speed": state["speed"],
+            "status": state["status"],
+            "gps_accuracy": state.get("gpsAccuracy", 0),
+            "battery": vehicle.get("battery", {}).get("level", 0),
+            "raw_data": response,
+        }
+
+
+class TokenExpiredError(Exception):
+    """Exception raised when API token has expired."""
+
+
+class RequestFailedError(Exception):
+    """Exception raised when API request fails."""
