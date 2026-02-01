@@ -56,13 +56,21 @@ Main class that handles all API interactions and data storage.
 **Key Methods:**
 - `__init__()` - Initialize with credentials, set up database connections
 - `getSummary()` - Get current vehicle state (position, speed, status)
-- `checkStatus()` - Extract lat/lng/speed/status from summary
+- `checkStatus()` - Extract lat/lng/speed/status from summary (normalizes speed to 0 when AT_REST)
 - `storeOracle(data)` - Insert vehicle data into Oracle DB
 - `storeMongo(data)` - Insert vehicle data into MongoDB
 - `get_history_from_oracle(limit)` - Query historical location data
 - `export_geojson(filepath)` - Export history as GeoJSON file
 - `export_kml(filepath)` - Export history as KML file
 - `close_connections()` - Clean up database connections
+
+### Data Normalization
+
+The API sometimes reports residual speed values (e.g., 5 km/h) when the vehicle is stopped (status: AT_REST). To ensure data accuracy:
+
+- **Speed Normalization**: `checkStatus()` automatically sets speed to 0 when status is "AT_REST"
+- This normalization is applied in both the standalone application and Home Assistant integration
+- Historical data exported from the database will reflect the normalized values
 
 ### Exceptions
 
@@ -172,9 +180,15 @@ This table is prefixed with `MAPIT_` to organize it within a shared database.
 | id | NUMBER (auto) | Primary key |
 | lng | NUMBER(10,7) | Longitude (decimal degrees) |
 | lat | NUMBER(10,7) | Latitude (decimal degrees) |
-| speed | NUMBER(6,2) | Speed in km/h |
+| speed | NUMBER(6,2) | Speed in km/h (normalized to 0 when AT_REST) |
 | status | VARCHAR2(50) | MOVING or AT_REST |
+| battery | NUMBER(3) | Battery percentage (0-100) |
+| hdop | NUMBER(6,2) | GPS accuracy indicator (lower is better) |
+| odometer | NUMBER(10,2) | Odometer reading in km |
+| last_coord_ts | NUMBER(13) | Timestamp of last coordinate update (epoch ms) |
 | creation_ts | TIMESTAMP WITH TIME ZONE | Record creation time |
+
+**Migration Note**: If you have an existing MAPIT_VEHICLE_TRACKING table, run `python migrate_oracle_table.py` to add the new columns.
 
 ### MongoDB Collection: `mapit.speed`
 
