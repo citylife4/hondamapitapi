@@ -1,12 +1,16 @@
 {
   "domain": "mapit_tracker",
   "name": "Mapit Motorcycle Tracker",
-  "codeowners": ["@citylife4"],
+  "codeowners": [
+    "@citylife4"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/citylife4/hondamapitapi",
   "integration_type": "device",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/citylife4/hondamapitapi/issues",
-  "requirements": ["requests>=2.32.0"],
-  "version": "1.0.0"
+  "requirements": [
+    "requests>=2.32.0"
+  ],
+  "version": "1.0.1"
 }
