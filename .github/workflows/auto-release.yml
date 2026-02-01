@@ -1,0 +1,108 @@
+name: Auto Release on Main
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  auto-release:
+    name: Create Automatic Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Get current version from manifest
+      id: current_version
+      run: |
+        VERSION=$(jq -r '.version' custom_components/mapit_tracker/manifest.json)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Current version: $VERSION"
+
+    - name: Calculate next version
+      id: next_version
+      run: |
+        CURRENT="${{ steps.current_version.outputs.version }}"
+        
+        # Split version into major.minor.patch
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+        
+        # Increment patch version
+        PATCH=$((PATCH + 1))
+        
+        NEXT_VERSION="$MAJOR.$MINOR.$PATCH"
+        echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
+        echo "Next version: $NEXT_VERSION"
+
+    - name: Update manifest.json version
+      run: |
+        VERSION="${{ steps.next_version.outputs.next_version }}"
+        jq --arg version "$VERSION" '.version = $version' custom_components/mapit_tracker/manifest.json > tmp.json
+        mv tmp.json custom_components/mapit_tracker/manifest.json
+        cat custom_components/mapit_tracker/manifest.json
+
+    - name: Commit version bump
+      run: |
+        VERSION="${{ steps.next_version.outputs.next_version }}"
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add custom_components/mapit_tracker/manifest.json
+        git commit -m "Bump version to $VERSION"
+        git push
+
+    - name: Create release archive
+      run: |
+        cd custom_components
+        zip -r ../mapit_tracker.zip mapit_tracker/
+
+    - name: Create Git Tag
+      run: |
+        VERSION="${{ steps.next_version.outputs.next_version }}"
+        git tag "v$VERSION"
+        git push origin "v$VERSION"
+
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        VERSION="${{ steps.next_version.outputs.next_version }}"
+        
+        cat > release_notes.md << 'EOF'
+        ## What's Changed
+        
+        This release was automatically created from the latest changes to the main branch.
+        
+        ## Installation
+        
+        ### HACS (Recommended)
+        1. Add this repository as a custom repository in HACS
+        2. Search for "Mapit Motorcycle Tracker"
+        3. Click Install
+        
+        ### Manual
+        1. Download `mapit_tracker.zip`
+        2. Extract to `config/custom_components/mapit_tracker`
+        3. Restart Home Assistant
+        
+        ## Files
+        - `mapit_tracker.zip` - Complete integration package
+        EOF
+        
+        echo "notes_file=release_notes.md" >> $GITHUB_OUTPUT
+
+    - name: Create GitHub Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION="${{ steps.next_version.outputs.next_version }}"
+        gh release create "v$VERSION" \
+          --title "Release v$VERSION" \
+          --notes-file "${{ steps.release_notes.outputs.notes_file }}" \
+          mapit_tracker.zip
