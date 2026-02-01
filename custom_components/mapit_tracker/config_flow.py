@@ -30,7 +30,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
     """Validate the user input allows us to connect.
-    
+
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
     """
     # Create API instance to test connection
@@ -42,14 +42,14 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         user_pool_client_id=data["user_pool_client_id"],
         hass=hass,
     )
-    
+
     # Try to authenticate
     try:
         await hass.async_add_executor_job(api.authenticate)
     except Exception as exc:
         _LOGGER.error("Failed to authenticate: %s", exc)
         raise InvalidAuth from exc
-    
+
     # Return info to be stored in the config entry
     return {"title": f"Mapit Tracker ({data['username']})"}
 
@@ -64,7 +64,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> FlowResult:
         """Handle the initial step."""
         errors: dict[str, str] = {}
-        
+
         if user_input is not None:
             try:
                 info = await validate_input(self.hass, user_input)
@@ -79,7 +79,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # Create unique ID from username
                 await self.async_set_unique_id(user_input["username"])
                 self._abort_if_unique_id_configured()
-                
+
                 return self.async_create_entry(title=info["title"], data=user_input)
 
         return self.async_show_form(

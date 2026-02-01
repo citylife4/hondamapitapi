@@ -72,7 +72,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Mapit sensors from config entry."""
     coordinator: MapitDataUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
-    
+
     async_add_entities(
         MapitSensor(coordinator, config_entry, description)
         for description in SENSORS
@@ -96,7 +96,7 @@ class MapitSensor(CoordinatorEntity, SensorEntity):
         self.entity_description = description
         self._config_entry = config_entry
         self._attr_unique_id = f"{config_entry.entry_id}_{description.key}"
-        
+
         # Device info
         self._attr_device_info = {
             "identifiers": {(DOMAIN, config_entry.entry_id)},

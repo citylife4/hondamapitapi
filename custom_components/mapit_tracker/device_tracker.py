@@ -21,7 +21,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Mapit device tracker from config entry."""
     coordinator: MapitDataUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
-    
+
     async_add_entities(
         [MapitDeviceTracker(coordinator, config_entry)],
         True,
@@ -44,7 +44,7 @@ class MapitDeviceTracker(CoordinatorEntity, TrackerEntity):
         super().__init__(coordinator)
         self._config_entry = config_entry
         self._attr_unique_id = f"{config_entry.entry_id}_tracker"
-        
+
         # Device info
         self._attr_device_info = {
             "identifiers": {(DOMAIN, config_entry.entry_id)},
@@ -77,7 +77,7 @@ class MapitDeviceTracker(CoordinatorEntity, TrackerEntity):
         """Return entity specific state attributes."""
         if not self.coordinator.data:
             return {}
-        
+
         return {
             "speed": self.coordinator.data.get("speed"),
             "status": self.coordinator.data.get("status"),
