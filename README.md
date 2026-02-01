@@ -82,7 +82,7 @@ See [Home Assistant Integration README](custom_components/mapit_tracker/README.m
 
 - [AGENTS.md](AGENTS.md) - Detailed architecture and API documentation
 - [Home Assistant Integration](custom_components/mapit_tracker/README.md) - HA setup guide
-- [HACS Deployment](HACS_DEPLOYMENT.md) - Guide for HACS submission and releases
+- [HACS Deployment](docs/HACS_DEPLOYMENT.md) - Guide for HACS submission and releases
 - [mapit-tracker.service](mapit-tracker.service) - Systemd service configuration
 
 ## Requirements
