@@ -133,7 +133,6 @@ After successful setup, you'll have these entities:
 ### Sensors
 - `sensor.motorcycle_speed` - Speed in km/h
 - `sensor.motorcycle_status` - MOVING or AT_REST
-- `sensor.motorcycle_gps_accuracy` - GPS accuracy in meters
 - `sensor.motorcycle_battery` - Battery percentage
 
 ## Adding to Dashboard
@@ -157,8 +156,6 @@ entities:
     icon: mdi:motorbike
   - entity: sensor.motorcycle_speed
     icon: mdi:speedometer
-  - entity: sensor.motorcycle_gps_accuracy
-    icon: mdi:crosshairs-gps
   - entity: sensor.motorcycle_battery
     icon: mdi:battery
 ```

@@ -132,7 +132,6 @@ cards:
     entities:
       - sensor.motorcycle_status
       - sensor.motorcycle_speed
-      - sensor.motorcycle_gps_accuracy
       - sensor.motorcycle_battery
 ```
 

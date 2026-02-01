@@ -92,7 +92,11 @@ class Mapit:
           lng NUMBER(10, 7), 
           lat NUMBER(10, 7), 
           speed NUMBER(6, 2), 
-          status VARCHAR2(50), 
+          status VARCHAR2(50),
+          battery NUMBER(3),
+          hdop NUMBER(6, 2),
+          odometer NUMBER(10, 2),
+          last_coord_ts NUMBER(13),
           creation_ts timestamp with time zone default current_timestamp,
           primary key (id)
       )''')
@@ -130,7 +134,11 @@ class Mapit:
     
     # Insert data into the table
     data = [response]
-    cursor.executemany("INSERT INTO MAPIT_VEHICLE_TRACKING (lng, lat, speed, status) VALUES (:lng, :lat, :speed, :status)", data)
+    cursor.executemany(
+      "INSERT INTO MAPIT_VEHICLE_TRACKING (lng, lat, speed, status, battery, hdop, odometer, last_coord_ts) "
+      "VALUES (:lng, :lat, :speed, :status, :battery, :hdop, :odometer, :last_coord_ts)", 
+      data
+    )
     self._oracle_conn.commit()
     
     self.logger.info("Data stored in Oracle DB successfully")
@@ -327,10 +335,17 @@ class Mapit:
     """Get current vehicle status (lng, lat, speed, status)."""
     self.logger.debug("Checking if moving")
     response = self.getSummary()
-    lng = response['vehicles'][0]['device']['state']['lng']
-    lat = response['vehicles'][0]['device']['state']['lat']
-    speed = response['vehicles'][0]['device']['state']['speed']
-    status = response['vehicles'][0]['device']['state']['status']
+    state = response['vehicles'][0]['device']['state']
+    lng = state['lng']
+    lat = state['lat']
+    speed = state['speed']
+    status = state['status']
+    
+    # Normalize speed: set to 0 when vehicle is at rest
+    # API sometimes reports residual speed values when stopped
+    if status == 'AT_REST':
+      speed = 0
+    
     return lng, lat, speed, status, response
 
   def get_history_from_oracle(self, limit=100):
@@ -341,7 +356,8 @@ class Mapit:
     
     cursor = self._oracle_conn.cursor()
     cursor.execute(
-      "SELECT lng, lat, speed, status, creation_ts FROM MAPIT_VEHICLE_TRACKING ORDER BY creation_ts DESC FETCH FIRST :limit ROWS ONLY",
+      "SELECT lng, lat, speed, status, battery, hdop, odometer, last_coord_ts, creation_ts "
+      "FROM MAPIT_VEHICLE_TRACKING ORDER BY creation_ts DESC FETCH FIRST :limit ROWS ONLY",
       {"limit": limit}
     )
     rows = cursor.fetchall()
@@ -353,7 +369,11 @@ class Mapit:
         "lat": float(row[1]) if row[1] else 0,
         "speed": row[2],
         "status": row[3],
-        "timestamp": row[4].isoformat() if row[4] else None
+        "battery": row[4],
+        "hdop": row[5],
+        "odometer": row[6],
+        "last_coord_ts": row[7],
+        "timestamp": row[8].isoformat() if row[8] else None
       })
     
     self.logger.debug("Retrieved %d historical records", len(history))
@@ -495,7 +515,23 @@ def run_checker(mapit, logger, sleep_time=1):
             lng, lat, speed, status, response = mapit.checkStatus()
             if (lng, lat) != (last_lng, last_lat):
                 logger.info(f"Vehicle moved: {lng}, {lat} at {speed} km/h (was: {last_lng}, {last_lat})")
-                mapit.storeOracle({"lng": str(lng), "lat": str(lat), "speed": str(speed), "status": status})
+                
+                # Extract additional fields from response
+                state = response['vehicles'][0]['device']['state']
+                vehicle = response['vehicles'][0]
+                
+                data = {
+                    "lng": str(lng), 
+                    "lat": str(lat), 
+                    "speed": str(speed), 
+                    "status": status,
+                    "battery": state.get('battery'),
+                    "hdop": state.get('hdop'),
+                    "odometer": state.get('odometer'),
+                    "last_coord_ts": state.get('lastCoordTs')
+                }
+                
+                mapit.storeOracle(data)
                 last_lng, last_lat = lng, lat
             time.sleep(sleep_time)
     except KeyboardInterrupt:

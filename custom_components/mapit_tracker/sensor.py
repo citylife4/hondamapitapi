@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 import logging
 
 from homeassistant.components.sensor import (
@@ -21,6 +22,25 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import DOMAIN, MapitDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _convert_timestamp(ts):
+    """Convert epoch milliseconds to UTC datetime.
+    
+    Args:
+        ts: Epoch timestamp in milliseconds
+        
+    Returns:
+        datetime object in UTC timezone, or None if conversion fails
+    """
+    if ts is None:
+        return None
+    try:
+        from datetime import timezone
+        return datetime.fromtimestamp(ts / 1000, tz=timezone.utc)
+    except (ValueError, TypeError):
+        return None
+
 
 
 @dataclass(frozen=True)
@@ -47,20 +67,35 @@ SENSORS: tuple[MapitSensorEntityDescription, ...] = (
         value_fn=lambda data: data.get("status"),
     ),
     MapitSensorEntityDescription(
-        key="gps_accuracy",
-        name="GPS Accuracy",
-        native_unit_of_measurement="m",
-        icon="mdi:crosshairs-gps",
-        state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: data.get("gps_accuracy"),
-    ),
-    MapitSensorEntityDescription(
         key="battery",
         name="Battery",
         native_unit_of_measurement="%",
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda data: data.get("battery"),
+    ),
+    MapitSensorEntityDescription(
+        key="hdop",
+        name="HDOP",
+        icon="mdi:map-marker-radius",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.get("hdop"),
+    ),
+    MapitSensorEntityDescription(
+        key="odometer",
+        name="Odometer",
+        native_unit_of_measurement="km",
+        device_class=SensorDeviceClass.DISTANCE,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        icon="mdi:counter",
+        value_fn=lambda data: data.get("odometer"),
+    ),
+    MapitSensorEntityDescription(
+        key="last_coord_ts",
+        name="Last Coordinate Update",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:clock-outline",
+        value_fn=lambda data: _convert_timestamp(data.get("last_coord_ts")),
     ),
 )
 
