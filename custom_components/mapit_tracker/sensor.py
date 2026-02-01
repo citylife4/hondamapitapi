@@ -25,11 +25,19 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def _convert_timestamp(ts):
-    """Convert epoch milliseconds to datetime."""
+    """Convert epoch milliseconds to UTC datetime.
+    
+    Args:
+        ts: Epoch timestamp in milliseconds
+        
+    Returns:
+        datetime object in UTC timezone, or None if conversion fails
+    """
     if ts is None:
         return None
     try:
-        return datetime.fromtimestamp(ts / 1000)
+        from datetime import timezone
+        return datetime.fromtimestamp(ts / 1000, tz=timezone.utc)
     except (ValueError, TypeError):
         return None
 
