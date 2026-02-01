@@ -81,7 +81,6 @@ class MapitDeviceTracker(CoordinatorEntity, TrackerEntity):
         attrs = {
             "speed": self.coordinator.data.get("speed"),
             "status": self.coordinator.data.get("status"),
-            "gps_accuracy": self.coordinator.data.get("gps_accuracy"),
         }
         
         # Add optional fields if available

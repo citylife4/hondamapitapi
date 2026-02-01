@@ -16,7 +16,7 @@ A comprehensive motorcycle tracking solution that interfaces with the Mapit.me v
 ### Home Assistant Integration
 - Full Home Assistant integration with device tracker
 - Real-time GPS tracking on Home Assistant maps
-- Speed, status, GPS accuracy, and battery sensors
+- Speed, status, and battery sensors
 - Automation support for movement detection and speed alerts
 - Easy configuration through Home Assistant UI
 - Automatic token management and refresh

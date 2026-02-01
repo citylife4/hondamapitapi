@@ -122,9 +122,6 @@ cards:
       - entity: sensor.motorcycle_speed
         name: Speed
         icon: mdi:speedometer
-      - entity: sensor.motorcycle_gps_accuracy
-        name: GPS Accuracy
-        icon: mdi:crosshairs-gps
       - entity: sensor.motorcycle_battery
         name: Battery
         icon: mdi:battery
@@ -179,7 +176,6 @@ After setup, you'll have these entities:
 | `device_tracker.motorcycle` | GPS location on map | Every 30s |
 | `sensor.motorcycle_speed` | Current speed (km/h) | Every 30s |
 | `sensor.motorcycle_status` | MOVING or AT_REST | Every 30s |
-| `sensor.motorcycle_gps_accuracy` | GPS accuracy (meters) | Every 30s |
 | `sensor.motorcycle_battery` | Battery level (%) | Every 30s |
 
 ---

@@ -67,14 +67,6 @@ SENSORS: tuple[MapitSensorEntityDescription, ...] = (
         value_fn=lambda data: data.get("status"),
     ),
     MapitSensorEntityDescription(
-        key="gps_accuracy",
-        name="GPS Accuracy",
-        native_unit_of_measurement="m",
-        icon="mdi:crosshairs-gps",
-        state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: data.get("gps_accuracy"),
-    ),
-    MapitSensorEntityDescription(
         key="battery",
         name="Battery",
         native_unit_of_measurement="%",

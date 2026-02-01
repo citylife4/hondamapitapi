@@ -3,6 +3,7 @@
 ## Overview
 
 This project interfaces with the **Mapit.me vehicle tracking API** to retrieve real-time motorcycle location data and store it in Oracle and MongoDB databases. It also provides visualization capabilities through a web-based map interface.
+This project also contains a custom_components to be used as a Home Assistant integration *Important* every update done to the main mapit.py code should be introduced and reproduced into the Home Assistant scripts.
 
 ## Architecture
 

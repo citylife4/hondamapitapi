@@ -26,7 +26,6 @@ This Home Assistant custom integration enables real-time tracking of motorcycles
 │  │         │ • device_tracker          │     │            │    │
 │  │         │ • sensor (speed)          │     │            │    │
 │  │         │ • sensor (status)         │     │            │    │
-│  │         │ • sensor (gps_accuracy)   │     │            │    │
 │  │         │ • sensor (battery)        │     │            │    │
 │  │         └───────────────────────────┘     │            │    │
 │  │                                            │            │    │
@@ -122,7 +121,6 @@ Return data dict:
         "longitude": float,
         "speed": float,
         "status": string,
-        "gps_accuracy": float,
         "battery": int
     }
     ↓
@@ -130,7 +128,6 @@ Coordinator updates all entities
     ├─ device_tracker.motorcycle
     ├─ sensor.motorcycle_speed
     ├─ sensor.motorcycle_status
-    ├─ sensor.motorcycle_gps_accuracy
     └─ sensor.motorcycle_battery
 ```
 
@@ -166,7 +163,6 @@ Coordinator updates all entities
 - **Attributes**:
   - speed: Current speed in km/h
   - status: MOVING or AT_REST
-  - gps_accuracy: GPS accuracy in meters
 
 ### Sensor: `sensor.motorcycle_speed`
 - **Unit**: km/h

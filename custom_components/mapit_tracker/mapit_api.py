@@ -256,7 +256,6 @@ class MapitAPI:
             "longitude": state["lng"],
             "speed": speed,
             "status": status,
-            "gps_accuracy": state.get("gpsAccuracy", 0),
             "battery": state.get("battery", 0),
             "hdop": state.get("hdop"),
             "odometer": state.get("odometer"),
